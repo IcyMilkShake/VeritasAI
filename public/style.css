@@ -1,0 +1,159 @@
+@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@600;700&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:        #060710;
+  --bg2:       #09091e;
+  --bg3:       #0a0b1c;
+  --border:    #161830;
+  --accent:    #2244ff;
+  --text:      #dde;
+  --muted:     #6b6f99;
+  --green:     #00ff88;
+  --red:       #ff3355;
+  --yellow:    #ffcc00;
+  --orange:    #ff8800;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Courier New', monospace;
+  min-height: 100vh;
+  padding-bottom: 80px;
+}
+
+/* ── Background effects ── */
+.scanline {
+  position: fixed; top: 0; left: 0; right: 0; height: 2px;
+  background: linear-gradient(transparent, rgba(51,68,255,0.12), transparent);
+  animation: scanline 7s linear infinite;
+  pointer-events: none; z-index: 100;
+}
+.grid-bg {
+  position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background-image:
+    linear-gradient(rgba(20,22,48,0.25) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(20,22,48,0.25) 1px, transparent 1px);
+  background-size: 44px 44px;
+}
+
+/* ── Layout ── */
+.container {
+  position: relative; z-index: 1;
+  max-width: 840px; margin: 0 auto; padding: 0 24px;
+}
+
+/* ── Header ── */
+header {
+  padding: 44px 0 28px;
+  border-bottom: 1px solid #12142a;
+}
+.logo {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: clamp(30px, 6vw, 50px);
+  font-weight: 700; letter-spacing: 4px;
+  color: #fff; text-transform: uppercase;
+}
+.logo span { color: var(--accent); }
+.tagline {
+  font-size: 11px; color: var(--muted);
+  letter-spacing: 2px; margin-top: 2px;
+}
+.subtitle {
+  font-size: 11px; color: var(--muted);
+  letter-spacing: 1px; margin-top: 4px;
+}
+
+/* ── Input section ── */
+.input-section { margin-top: 28px; }
+
+.field-label-row {
+  display: flex; justify-content: space-between;
+  font-size: 10px; color: var(--muted);
+  letter-spacing: 2px; margin-bottom: 6px;
+}
+#char-count.warn { color: var(--red); }
+
+textarea {
+  width: 100%;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 14px;
+  font-family: 'Courier New', monospace;
+  font-size: 13px; color: var(--text);
+  resize: vertical; line-height: 1.6;
+}
+textarea:focus { outline: none; border-color: #2233cc; }
+
+/* ── Buttons ── */
+.button-row { display: flex; gap: 10px; margin-top: 12px; }
+
+button {
+  padding: 11px 28px;
+  border-radius: 4px;
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 700; font-size: 13px;
+  letter-spacing: 3px; text-transform: uppercase;
+  cursor: pointer; transition: all 0.15s;
+  border: 1px solid #2233cc;
+  background: var(--accent); color: #fff;
+}
+button:disabled {
+  background: #0c0e22; color: #2233cc; cursor: not-allowed;
+}
+button:hover:not(:disabled) { filter: brightness(1.15); }
+
+button.secondary {
+  background: transparent;
+  border-color: var(--border);
+  color: #6b6f99;
+}
+button.secondary:hover { color: var(--text); border-color: #6b6f99; }
+
+.hidden { display: none !important; }
+
+/* ── Status line ── */
+.status {
+  display: flex; align-items: center;
+  gap: 8px; padding: 10px 0; margin-top: 16px;
+}
+.pulse-dot {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: #3344dd;
+  animation: pulse 1s infinite;
+  flex-shrink: 0;
+}
+#status-text { font-size: 12px; color: #7788cc; }
+
+/* ── Results ── */
+#results { margin-top: 32px; }
+
+/* ── Footer ── */
+footer {
+  margin-top: 60px; padding-top: 16px;
+  border-top: 1px solid #0e0f20;
+  font-size: 10px; color: #4a4e6e;
+  letter-spacing: 1px; text-align: center;
+}
+
+/* ── Animations ── */
+@keyframes scanline {
+  0%   { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.3; }
+}
+@keyframes fadeSlide {
+  from { opacity: 0; transform: translateY(5px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border); }

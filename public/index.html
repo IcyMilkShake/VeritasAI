@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VeriAI</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <div class="scanline"></div>
+  <div class="grid-bg"></div>
+
+  <div class="container">
+
+    <header>
+      <div class="logo">VERITAS<span>AI</span></div>
+      <div class="tagline">THREAT INTEL v0.1</div>
+      <p class="subtitle">▸ CLAIM EXTRACTION &amp; MULTI-SOURCE VERIFICATION ENGINE</p>
+    </header>
+
+    <main>
+      <!-- Input Section -->
+      <section class="input-section">
+        <div class="field-label-row">
+          <label>STATEMENT INPUT</label>
+          <span id="char-count">0/500</span>
+        </div>
+        <textarea
+          id="statement"
+          maxlength="500"
+          rows="4"
+          placeholder='Enter a statement to verify — e.g. "Officials are hiding a bombing attack in London"'
+        ></textarea>
+
+        <div class="button-row">
+          <button id="analyze-btn" disabled>▶ ANALYZE</button>
+          <button id="reset-btn" class="secondary hidden">RESET</button>
+        </div>
+      </section>
+
+      <!-- Status line (hidden by default) -->
+      <div id="status" class="status hidden">
+        <span class="pulse-dot"></span>
+        <span id="status-text">Working...</span>
+      </div>
+
+      <!-- Results area (empty for now) -->
+      <section id="results"></section>
+    </main>
+
+    <footer>
+      VERIFAI · RESULTS ARE PROBABILISTIC — ALWAYS VERIFY WITH PRIMARY SOURCES
+    </footer>
+
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
