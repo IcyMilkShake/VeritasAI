@@ -76,9 +76,10 @@ Output:
 
 DEFINITION OF VALID CLAIM:
 - specific (who/what happened)
+- factual (not opinion)
 - verifiable (can be checked against sources)
 
-IF the input does NOT meet ALL 2:
+IF the input does NOT meet ALL 3:
 → RETURN []
 
 RULES:
@@ -88,7 +89,6 @@ RULES:
 - Do NOT include who said it
 - Do NOT guess missing details
 - NEVER output vague claims
-- Only ONE claim is allowed do NOT disect the claim into many
 
 OUTPUT FORMAT (STRICT JSON ONLY):
 [
@@ -108,7 +108,7 @@ NO:
 export async function extractClaims(statement) {
   const raw = await callOllama(MODEL, [
     { role: 'system', content: SYSTEM },
-    { role: 'user',   content: `Claim: "${statement}"` },
+    { role: 'user',   content: `Settings: "${statement}"` },
   ])
 console.log("Claim:", parseJSON(raw))
   return parseJSON(raw)
