@@ -39,21 +39,31 @@ Examples:
 - "Thailand PLANS TO raise VAT" → intent → proposal is enough
   source says "senate proposed VAT hike" = support (0.8)
 
-STEP 1.5 — SOURCE DATE:
-Use SOURCE DATE to assess the claim's status if available. If null, ignore entirely. Compare this source date to today's date provided.
-Source date of the article: ARTICLE_DATE
-- Recent source still says "proposed/planned" → stronger contradict — a recent article would
-  confirm enactment if it had actually happened
-- Old source confirming something → lower confidence, situation may have changed
-- Source dated before the claimed event could have occurred → neutral or weak contradict
+STEP 2 — RECENCY CHECK:
+Current date is provided at the top. Use it to assess whether sources match the claim's timeframe.
 
-STEP 2 — ENTITY MATCHING:
+- If the claim says "today" → only sources describing events on today's date are relevant
+- If the claim says "yesterday" → only sources describing events on yesterday's date are relevant
+- If a source describes an event from a different date than the claim implies → lower confidence or neutral
+- If a source is clearly about a past unrelated event → neutral
+
+Examples (assuming today is April 26, 2026):
+- Claim: "There was a shooting at the White House Correspondents' Dinner yesterday"
+  Source describes shooting at WHCD on April 25, 2026 → "yesterday" = April 25 ✅ = support
+  Source describes shooting at WHCD on April 20, 2026 → wrong date, not yesterday = neutral or small contradiction
+  Source describes a different shooting from 2024 → completely different event = neutral
+
+- Claim: "Trump was shot today"
+  Source from April 26, 2026 describing today's incident → support
+  Source from July 2024 Pennsylvania shooting → different event, different date = neutral
+
+STEP 3 — ENTITY MATCHING:
 Identify the exact subject of the claim (a specific person, company, country, law).
 The source must be about that EXACT entity — not a relative, associate, predecessor, or
 similarly named person.
 
 - Claim about person X → source about X's father/child/colleague = neutral
-- Claim about company X → source about X's subsidiary/competitor = neutral or weak
+- Claim about company X → source about X's subsidiary/competitor = neutral
 - Claim about country X → source about a different country = neutral
 
 Examples:
@@ -62,8 +72,9 @@ Examples:
 - Claim: "Joe Biden said Y" → source about Hunter Biden = neutral
 
 A source is only relevant if it directly involves the SAME entity named in the claim.
+If the source did not talk about the same entity it is automatically considered neutral.
 
-STEP 3 — SCOPE MATCHING:
+STEP 4 — SCOPE MATCHING:
 Pay attention to the statement clearly, does it require a full confirmation or only partial information is fine.
 A source confirming only a narrow or partial is allowed when statement looks like this:
 e.g. claim says "suspect is a teacher and a video games maker" → source says "suspect is a teacher" = support (0.1–0.3 confidence)
@@ -74,7 +85,7 @@ e.g. claim says "banned all AI" → source says "banned 8 types of AI" = contrad
 e.g. claim says "reversed all EV subsidies" → source says "removed one subsidy" = contradict (0.4–0.7 confidence)
 These claims do NEED full claim confirmation
 
-STEP 4 — NEARLY/ALMOST CLAIMS:
+STEP 5 — NEARLY/ALMOST CLAIMS:
 If the claim uses "nearly", "almost", or "attempted" — do not require the outcome to have
 occurred. Evidence of a threat, security response, evacuation, or shots fired in proximity
 IS supporting evidence.
@@ -119,8 +130,8 @@ export async function analyzeSource(claim, source, pageText = null) {
   const now = new Date().toUTCString()
   const articleDate = source.date
   console.log(articleDate)
-  ANALYZE_PROMPT.replace('DATE',now).replace('ARTICLE_DATE',articleDate)
-
+  const systemPrompt = ANALYZE_PROMPT.replace('DATE',now)
+  console.log('[pageText preview]', pageText?.slice(0, 500))
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -130,7 +141,7 @@ export async function analyzeSource(claim, source, pageText = null) {
     body: JSON.stringify({
       model: MODEL,
       messages: [
-        { role: 'system', content: ANALYZE_PROMPT },
+        { role: 'system', content: systemPrompt },
         { role: 'user',   content: user },
       ],
     }),

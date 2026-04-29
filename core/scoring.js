@@ -1,7 +1,3 @@
-// ─── Step 3: Score analyses and compute final verdict ────────────────────────
-// Input:  analyses [{ stance, confidence }]
-// Output: { verdict, score, color, breakdown }
-
 const STANCE_SCORE = { support: 1, neutral: 0, contradict: -1 }
 
 export function computeVerdict(analyses) {

@@ -8,6 +8,7 @@ import { analyzeSource } from './core/analyze.js'
 import { computeVerdict } from './core/scoring.js'
 import { fetchPageText } from './core/fetcher.js'
 import { getSearchSettings } from './core/setting.js'
+import { summarizeAnalysis } from './core/summary.js'
 import dotenv from 'dotenv'
 
 const app = express()
@@ -30,7 +31,7 @@ async function searchClaim(claim, timeSensitive = false) {
     gl: gl.gl,
     num: 8,
     safe: 'off',
-    no_cache: false,
+    no_cache: false, //yo set ts to true in production
   }
 
   console.log('[search] query:', params.q, '| gl:', gl.gl)
@@ -99,6 +100,20 @@ app.post('/api/analyze-source', async (req, res) => {
   } catch (err) {
     console.error('[analyze-source]', err.message)
     res.status(500).json({ error: 'Analysis failed', detail: err.message })
+  }
+})
+
+app.post('/api/summary', async (req, res) => {
+  const { claim, analyses } = req.body
+  if (!claim || !Array.isArray(analyses)) 
+    return res.status(400).json({ error: 'Missing claim or analyses' })
+
+  try {
+    const summary = await summarizeAnalysis(claim, analyses)
+    res.json({ summary })
+  } catch (err) {
+    console.error('[summary]', err.message)
+    res.status(500).json({ error: 'Summary failed', detail: err.message })
   }
 })
 

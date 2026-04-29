@@ -109,6 +109,14 @@ function escapeHtml(str) {
     .replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 }
 
+function setSummary(idx, text) {
+  const header = document.querySelector(`#claim-${idx} .claim-header`)
+  const el = document.createElement('div')
+  el.className = 'claim-summary'
+  el.textContent = text
+  header.insertAdjacentElement('afterend', el)
+}
+
 async function onAnalyze() {
     const statement = statementEl.value.trim();
     if (!statement) return;
@@ -180,6 +188,10 @@ async function onAnalyze() {
       try {
         const verdict = await apiPost('/verdict', { analyses })
         setVerdictBadge(i, verdict)
+        console.log(analyses)
+        // Summary
+        const { summary } = await apiPost('/summary', { claim: claim.claim, analyses })
+        setSummary(i, summary)
       } catch { /* skip */ }
     } else {
       showNoSources(i)
