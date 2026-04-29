@@ -7,6 +7,7 @@ import { extractClaims } from './core/claims.js'
 import { analyzeSource } from './core/analyze.js'
 import { computeVerdict } from './core/scoring.js'
 import { fetchPageText } from './core/fetcher.js'
+import { getSearchSettings } from './core/setting.js'
 import dotenv from 'dotenv'
 
 const app = express()
@@ -20,18 +21,20 @@ dotenv.config()
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 async function searchClaim(claim, timeSensitive = false) {
+  const gl = await getSearchSettings(claim.claim)
   const params = {
     engine: 'google',
     api_key: process.env.SERP_API_KEY,
     q: claim.claim + ' news',
     hl: 'en',
-    gl: 'us',
+    gl: gl.gl,
     num: 8,
     safe: 'off',
     no_cache: false,
   }
 
-  if (timeSensitive) params.tbs = 'sbd:1'
+  console.log('[search] query:', params.q, '| gl:', gl.gl)
+//if (timeSensitive) params.tbs = 'sbd:1'
  
   console.log('[search] query:', params.q, '| time_sensitive:', timeSensitive)
   const response = await getJson(params)
@@ -42,6 +45,7 @@ async function searchClaim(claim, timeSensitive = false) {
     title: r.title,
     link: r.link,
     snippet: r.snippet,
+    date: r.date || null
   }))
 }
 
@@ -86,7 +90,6 @@ app.post('/api/analyze-source', async (req, res) => {
     // Fetch full page content, fall back to snippet-only if it fails
     console.log(`  [fetch] ${source.link}`)
     const pageText = await fetchPageText(source.link)
-    console.log(pageText)
     const analysis = await analyzeSource(claim, source, pageText)
 
     // analyzeSource returns null for neutral — tell frontend to skip it

@@ -63,7 +63,7 @@ function createClaimBlock(claim, idx) {
   return block
 }
 
-function appendSourceCard(idx, analysis) {
+function appendSourceCard(idx, analysis, date) {
   const body = document.getElementById(`body-${idx}`)
   const stanceMeta = {
     support:    { label: 'SUPPORTS',    cls: 'support' },
@@ -71,6 +71,7 @@ function appendSourceCard(idx, analysis) {
   }
   const m = stanceMeta[analysis.stance] ?? { label: analysis.stance.toUpperCase(), cls: 'neutral' }
   const pct = Math.round((analysis.confidence ?? 0.5) * 100)
+  const dateStr = date ? `<span class="source-date">${escapeHtml(date)}</span>` : ''
 
   const card = document.createElement('div')
   card.className = `source-card ${m.cls}`
@@ -79,6 +80,7 @@ function appendSourceCard(idx, analysis) {
       <span class="source-title">${escapeHtml(analysis.source)}</span>
       <span class="stance-badge ${m.cls}">${m.label}</span>
     </div>
+    ${dateStr}
     <p class="source-summary">${escapeHtml(analysis.summary)}</p>
     <div class="confidence-bar">
       <div class="confidence-fill" style="width:${pct}%"></div>
@@ -164,8 +166,9 @@ async function onAnalyze() {
           source: sources[j],
         })
         if (!result.filtered) {
-          analyses.push(result)
-          appendSourceCard(i, result)  // show immediately as it comes in
+          analyses.push(result.result)
+          console.log(result.date)
+          appendSourceCard(i, result.result, result.date)  // show immediately as it comes in
         }
       } catch {
         // skip failed sources silently

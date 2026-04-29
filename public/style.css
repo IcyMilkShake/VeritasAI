@@ -206,6 +206,14 @@ footer {
   animation: fadeSlide 0.3s ease both;
 }
 
+.source-date {
+  display: block;
+  font-size: 0.65rem;
+  color: #888;
+  margin: 2px 0 6px 0;
+  letter-spacing: 0.05em;
+}
+
 .source-card.support    { border: 1px solid rgba(0,255,136,0.2);  background: rgba(0,255,136,0.05); }
 .source-card.contradict { border: 1px solid rgba(255,51,85,0.2);  background: rgba(255,51,85,0.05); }
 
