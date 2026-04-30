@@ -13,23 +13,14 @@ import dotenv from 'dotenv'
 
 dotenv.config()
 
-// ←←← Existing logs
-console.log("✅ Server file loaded");
-console.log("Current directory:", path.dirname(fileURLToPath(import.meta.url)));
-console.log("SERP_API_KEY loaded?", !!process.env.SERP_API_KEY ? "YES" : "NO");
-
 const app = express()
 const PORT = 8081
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 app.use(express.json())
-app.use(express.static(path.join(__dirname, 'public')));
-
-console.log("✅ Express app created successfully");   // ← Add this line
+app.use(express.static(path.join(__dirname, 'public')))
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-
-console.log("✅ Starting to load helper functions...");   // ← Add this line
 
 async function searchClaim(claim, timeSensitive = false) {
   const gl = await getSearchSettings(claim.claim)
@@ -139,6 +130,7 @@ app.post('/api/verdict', (req, res) => {
 // ── GET /api/health ───────────────────────────────────────────────────────────
 app.get('/api/health', (_, res) => res.json({ status: 'ok' }))
 
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Server running on http://localhost:${PORT}`)
+app.listen(PORT, () => {
+  console.log(`\n🚀 Server running on http://localhost:${PORT}`)
+  console.log(`   Production URL will be: https://veritas.ipo-servers.net:${PORT}\n`)
 })
