@@ -139,7 +139,6 @@ app.post('/api/verdict', (req, res) => {
 // ── GET /api/health ───────────────────────────────────────────────────────────
 app.get('/api/health', (_, res) => res.json({ status: 'ok' }))
 
-app.listen(PORT, () => {
-  console.log(`\n🚀 Server running on http://localhost:${PORT}`)
-  console.log(`   Production URL will be: https://veritas.ipo-servers.net:${PORT}\n`)
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 Server running on http://localhost:${PORT}`)
 })
