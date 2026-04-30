@@ -12,7 +12,7 @@ import { summarizeAnalysis } from './core/summary.js'
 import dotenv from 'dotenv'
 
 const app = express()
-const PORT = 3000
+const PORT = 8081
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 app.use(express.json())
@@ -130,5 +130,6 @@ app.post('/api/verdict', (req, res) => {
 app.get('/api/health', (_, res) => res.json({ status: 'ok' }))
 
 app.listen(PORT, () => {
-  console.log(`\n  ▸ http://localhost:${PORT}\n`)
+  console.log(`\n🚀 Server running on http://localhost:${PORT}`)
+  console.log(`   Production URL will be: https://veritas.ipo-servers.net:${PORT}\n`)
 })
