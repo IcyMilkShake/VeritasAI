@@ -11,13 +11,17 @@ import { getSearchSettings } from './core/setting.js'
 import { summarizeAnalysis } from './core/summary.js'
 import dotenv from 'dotenv'
 
+dotenv.config()
 const app = express()
 const PORT = 8081
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
+console.log("✅ Server file loaded");
+console.log("Current directory:", path.dirname(fileURLToPath(import.meta.url)));
+console.log("SERP_API_KEY loaded?", !!process.env.SERP_API_KEY ? "YES" : "NO");
+
 app.use(express.json())
 app.use(express.static(path.join(__dirname, 'public')))
-dotenv.config()
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
