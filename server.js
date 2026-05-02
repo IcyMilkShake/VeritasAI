@@ -27,7 +27,7 @@ async function searchClaim(claim, timeSensitive = false) {
   const params = {
     engine: 'google',
     api_key: process.env.SERP_API_KEY,
-    q: gl.query + ' news',
+    q: gl.query,
     hl: 'en',
     gl: gl.gl,
     num: 8,
