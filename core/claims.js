@@ -1,6 +1,6 @@
 import { callOllama, parseJSON } from './ollama.js'
 
-const MODEL = 'qwen3-vl:8b-instruct-q4_K_M'
+const MODEL = 'gpt-5.4-nano-2026-03-17'
 
 const SYSTEM = `
 You extract factual claims from user input.
@@ -104,12 +104,35 @@ NO:
 - extra keys
 - text outside JSON
 `
-
 export async function extractClaims(statement) {
-  const raw = await callOllama(MODEL, [
-    { role: 'system', content: SYSTEM },
-    { role: 'user',   content: `Claim: "${statement}"` },
-  ])
-console.log("Claim:", parseJSON(raw))
-  return parseJSON(raw)
+  const now = new Date().toUTCString()
+
+  const response = await fetch('https://api.openai.com/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${process.env.OPENAI_KEY}`
+    },
+    body: JSON.stringify({
+      model: MODEL,
+      messages: [
+        { role: 'system', content: SYSTEM },
+        { role: 'user',   content: `Claim: "${statement}"` },
+      ],
+    }),
+  })
+
+  if (!response.ok) {
+    const err = await response.text()
+    throw new Error(`OpenAI error ${response.status}: ${err}`)
+  }
+
+  const data = await response.json()
+  const raw = data.choices[0].message.content
+
+  console.log("Raw output:", raw)
+  const result = parseJSON(raw)
+  
+  console.log("Parsed Claim:", result)
+  return result
 }
