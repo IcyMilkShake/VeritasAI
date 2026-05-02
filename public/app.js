@@ -172,11 +172,16 @@ async function onAnalyze() {
         const result = await apiPost('/analyze-source', {
           claim: claim.claim,
           source: sources[j],
+          previousAnalyses: analyses.map(a => ({
+            stance: a.stance,
+            confidence: a.confidence,
+            summary: a.summary
+          }))
         })
         if (!result.filtered) {
           analyses.push(result.result)
           console.log(result.date)
-          appendSourceCard(i, result.result, result.date)  // show immediately as it comes in
+          appendSourceCard(i, result.result, result.date)
         }
       } catch {
         // skip failed sources silently

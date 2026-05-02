@@ -27,7 +27,7 @@ async function searchClaim(claim, timeSensitive = false) {
   const params = {
     engine: 'google',
     api_key: process.env.SERP_API_KEY,
-    q: claim.claim + ' news',
+    q: gl.query + ' news',
     hl: 'en',
     gl: gl.gl,
     num: 8,
@@ -36,7 +36,7 @@ async function searchClaim(claim, timeSensitive = false) {
   }
 
   console.log('[search] query:', params.q, '| gl:', gl.gl)
-//if (timeSensitive) params.tbs = 'sbd:1'
+  if (timeSensitive) params.tbs = 'sbd:1'
  
   console.log('[search] query:', params.q, '| time_sensitive:', timeSensitive)
   const response = await getJson(params)
@@ -85,14 +85,14 @@ app.post('/api/search', async (req, res) => {
 })
 
 app.post('/api/analyze-source', async (req, res) => {
-  const { claim, source } = req.body
+  const { claim, source, previousAnalyses = [] } = req.body
   if (!claim || !source) return res.status(400).json({ error: 'Missing claim or source' })
 
   try {
     // Fetch full page content, fall back to snippet-only if it fails
     console.log(`  [fetch] ${source.link}`)
     const pageText = await fetchPageText(source.link)
-    const analysis = await analyzeSource(claim, source, pageText)
+    const analysis = await analyzeSource(claim, source, pageText, previousAnalyses)
 
     // analyzeSource returns null for neutral — tell frontend to skip it
     if (!analysis) return res.json({ filtered: true })

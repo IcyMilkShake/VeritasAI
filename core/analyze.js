@@ -5,7 +5,7 @@ import { callOllama, parseJSON } from './ollama.js'
 
 const MODEL = 'gpt-5.4-mini-2026-03-17'
 
-const ANALYZE_PROMPT = `You are a fact-checking engine. Current date/time: DATE
+const ANALYZE_PROMPT = `You are a fact-checking engine.
 
 You analyze a news source against a claim.
 Determine the stance of the source relative to the claim.
@@ -27,9 +27,24 @@ Before doing anything else, identify what the claim is asserting:
 - Present tense ("is", "has been", "remains") → claim asserts it is currently true
 - Intent/future tense ("planning to", "considering", "wants to", "will") → proposal or discussion is usually enough for support
 
-STEP 2 — RECENCY CHECK:
-Current date is provided at the top. Use it to assess whether sources match the claim's timeframe.
-Slight differences in timing (same day or next day) should not automatically make a source neutral.
+STEP 2 — DATE CHECK:
+Current date/time: DATE
+
+If the claim states a specific date or relative time ("yesterday", "X days ago"):
+- Look for the date the described EVENT OCCURRED inside the source content
+- The event date is usually found in phrases like:
+  "on [date]", "occurred on", "happened on", "took place on", 
+  "on [weekday]", "last [weekday]", "[month] [day]"
+- IGNORE dates in these contexts:
+  "published", "updated", "last modified", "posted", "copyright", "retrieved"
+  These are article metadata, not event dates
+
+- Event date MATCHES claim date → support (0.8–1.0)
+- Event date DOES NOT MATCH → contradict (0.6–0.8)
+- No event date found → support capped at 0.5, never higher
+  Note in summary: "event date not found in source"
+
+NEVER use article publish/update dates. Only dates describing when the event itself occurred.
 
 STEP 3 — ENTITY MATCHING:
 The source must be about the same main entity named in the claim.
@@ -51,19 +66,23 @@ For SUPPORT:
 - 0.8 → strongly supports the core claim
 - 0.6 → supports the general direction or main event (recommended default for reasonable matches)
 - 0.4 and below → weak or indirect support
+- If claim has a specific date and source has NO event date → cap at 0.5 (per STEP 2)
 
 For CONTRADICT:
 - 1.0 → explicitly denies the core claim
 - 0.8 → strongly implies the claim is false
 - 0.6 and below → only use if the source clearly contradicts key parts
+- If claim has a specific date and source event date MISMATCHES → minimum 0.6 (per STEP 2)
 
 For NEUTRAL:
-- Use when the source has no meaningful connection to the claim or is about a clearly different event/entity.
+- Use ONLY when the source has zero meaningful connection to the claim
+- A source confirming the event but missing the date is NOT neutral — it is support at low confidence
+- A source about a different entity or completely unrelated event = neutral
 
 Stance definitions:
-- "support"    → source provides evidence that the core claim is likely true
-- "contradict" → source provides evidence that the core claim is likely false
-- "neutral"    → little or no relevant connection to the claim
+- "support"    → source confirms the core claim is likely true; confidence is shaped by STEP 2 date check
+- "contradict" → source indicates the core claim is likely false OR the specific date is wrong (STEP 2)
+- "neutral"    → zero topical or entity connection to the claim — not just missing details
 
 Output ONLY a JSON object, no fences, no explanation:
 {"source":"...","stance":"support|contradict|neutral","confidence":0.0,"summary":"..."}`
@@ -75,13 +94,24 @@ thailand proposed an increase in their VAT from 7 to 10% - true
 elon musk touches kids - contested or contradict
 US and Israel started the Iran war - true
 Iran started the US-Israel war - false
+trump experienced an assassination attempt on april 25th - support or deny its fine but INCLUDE summary that the date is right
+trump experienced an assassination attempt on april 28th - support or deny its fine but INCLUDE summary that the date is wrong
 */
-export async function analyzeSource(claim, source, pageText = null) {
+export async function analyzeSource(claim, source, pageText = null, previousAnalyses = []) {
+  console.log("tis the new version")
   const context = pageText
     ? `SOURCE TITLE: ${source.title}\nSOURCE SNIPPET: ${source.snippet}\nPAGE CONTENT: ${pageText}`
     : `SOURCE TITLE: ${source.title}\nSOURCE SNIPPET: ${source.snippet}`
 
-  const user = `CLAIM: ${claim}\n\n${context}`
+  const historyText = previousAnalyses.length
+    ? `\nPREVIOUS SOURCE ANALYSES (for context only — judge this source independently):\n${
+        previousAnalyses.map((a, i) =>
+          `[${i+1}] ${a.stance.toUpperCase()} (${Math.round(a.confidence * 100)}%): ${a.summary}`
+        ).join('\n')
+      }\n`
+    : ''
+
+  const user = `CLAIM: ${claim}\n${historyText}\n${context}`
 
   const now = new Date().toUTCString()
   const articleDate = source.date
