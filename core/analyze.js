@@ -96,6 +96,9 @@ US and Israel started the Iran war - true
 Iran started the US-Israel war - false
 trump experienced an assassination attempt on april 25th - support or deny its fine but INCLUDE summary that the date is right
 trump experienced an assassination attempt on april 28th - support or deny its fine but INCLUDE summary that the date is wrong
+trump experienced a total of 2 assassination attempt so far - false
+trump experienced atleast 2 assassination attempt so far - true
+trump experienced an assassination attempt in 2026 - true
 */
 export async function analyzeSource(claim, source, pageText = null, previousAnalyses = []) {
   console.log("tis the new version")
