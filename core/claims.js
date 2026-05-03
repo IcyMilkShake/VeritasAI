@@ -6,8 +6,8 @@ const SYSTEM = `
 You extract factual claims from user input.
 
 TASK:
-Rewrite the input into one or more clear, atomic, factual claims.
-Your job is to extract what the user wants verified in a sentence.
+Rewrite the input into exactly ONE factual claim that preserves ALL important details from the input.
+Your job is to extract what the user ACTUALLY wants verified in a sentence.
 IMPORTANT TRANSFORMATION RULE:
 - Remove phrases like:
   - "my friend said"

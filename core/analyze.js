@@ -4,8 +4,8 @@
 import { callOllama, parseJSON } from './ollama.js'
 
 const MODEL = 'gpt-5.4-mini-2026-03-17'
-
-const ANALYZE_PROMPT = `You are a fact-checking engine.
+console.log("1")
+const ANALYZE_PROMPT = `You are a fact-checking engine. Current date/time: DATE
 
 You analyze a news source against a claim.
 Determine the stance of the source relative to the claim.
@@ -13,79 +13,102 @@ Determine the stance of the source relative to the claim.
 Rules:
 - Only use the given info
 - Do not assume extra facts
-- Be conservative but reasonable
+- Be conservative
 - The source TITLE carries strong signal — treat it as a headline summary of the article's conclusion
 
 STEP 1 — READ THE CLAIM'S TENSE FIRST:
 Before doing anything else, identify what the claim is asserting:
 
-- Past tense ("raised", "banned", "signed", "passed", "increased", "gave a speech", "spoke") → claim asserts the event happened
-  Sources showing only proposal/plan = weak contradict or neutral
-  Sources showing it was attempted but reversed = contradict
-  Sources showing the core event occurred (even with slight differences in timing or wording) = support
+- Past tense ("raised", "banned", "signed", "passed", "increased") → claim asserts it ALREADY HAPPENED COMPLETELY
+  Sources showing only proposal/plan/debate = contradict (0.6–0.8)
+  Sources showing it was attempted but reversed = contradict (0.8–1.0)
+  Sources showing it never happened = contradict (0.9–1.0)
 
-- Present tense ("is", "has been", "remains") → claim asserts it is currently true
-- Intent/future tense ("planning to", "considering", "wants to", "will") → proposal or discussion is usually enough for support
+- Present tense ("is", "has been", "remains") → claim asserts it is CURRENTLY TRUE
+  Sources showing it was true before but no longer = contradict (0.8)
+  Sources showing it is only partially true = contradict (0.5–0.6)
 
-STEP 2 — DATE CHECK:
-Current date/time: DATE
+- Intent/future tense ("planning to", "considering", "wants to", "will") → claim asserts INTENT ONLY
+  Sources showing proposals or discussions = support (0.7–0.9)
+  Sources showing it was never enacted = neutral or weak contradict (0.1–0.2)
 
-If the claim states a specific date or relative time ("yesterday", "X days ago"):
-- Look for the date the described EVENT OCCURRED inside the source content
-- The event date is usually found in phrases like:
-  "on [date]", "occurred on", "happened on", "took place on", 
-  "on [weekday]", "last [weekday]", "[month] [day]"
-- IGNORE dates in these contexts:
-  "published", "updated", "last modified", "posted", "copyright", "retrieved"
-  These are article metadata, not event dates
+Examples:
+- "Thailand RAISED VAT to 10%" → past tense → must have already happened
+  source says "proposed to raise" = contradict (0.7)
+  source says "VAT remains at 7%" = contradict (1.0)
+- "Thailand PLANS TO raise VAT" → intent → proposal is enough
+  source says "senate proposed VAT hike" = support (0.8)
 
-- Event date MATCHES claim date → support (0.8–1.0)
-- Event date DOES NOT MATCH → contradict (0.6–0.8)
-- No event date found → support capped at 0.5, never higher
-  Note in summary: "event date not found in source"
+STEP 1.5 — SOURCE DATE:
+Use SOURCE DATE to assess the claim's status if available. If null, ignore entirely. Compare this source date to today's date provided.
+Source date of the article: ARTICLE_DATE
+- Recent source still says "proposed/planned" → stronger contradict — a recent article would
+  confirm enactment if it had actually happened
+- Old source confirming something → lower confidence, situation may have changed
+- Source dated before the claimed event could have occurred → neutral or weak contradict
 
-NEVER use article publish/update dates. Only dates describing when the event itself occurred.
+STEP 2 — ENTITY MATCHING:
+Identify the exact subject of the claim (a specific person, company, country, law).
+The source must be about that EXACT entity — not a relative, associate, predecessor, or
+similarly named person.
 
-STEP 3 — ENTITY MATCHING:
-The source must be about the same main entity named in the claim.
-Minor differences (e.g. father vs son) = neutral.
+- Claim about person X → source about X's father/child/colleague = neutral
+- Claim about company X → source about X's subsidiary/competitor = neutral or weak
+- Claim about country X → source about a different country = neutral
 
-STEP 4 — SCOPE MATCHING:
-- If the claim is relatively broad ("gave a speech after surviving a shooting"), sources that confirm the main event happened and that Trump spoke afterward should be treated as SUPPORT, even if wording is not 100% exact.
-- Only strong contradictions (e.g. source says the event never happened or Trump did not speak at all) should be labeled CONTRADICT.
+Examples:
+- Claim: "Elon Musk touches kids" → source about Errol Musk (his father) = neutral
+- Claim: "Apple banned app X" → source about Google banning app X = neutral
+- Claim: "Joe Biden said Y" → source about Hunter Biden = neutral
 
-STEP 5 — NEARLY/ALMOST CLAIMS:
-If the claim uses "after surviving", evidence that shots were fired and Trump later spoke / held a press conference / made a statement counts as supporting evidence.
+A source is only relevant if it directly involves the SAME entity named in the claim.
 
-CONFIDENCE RULES:
-When in doubt, choose slightly lower confidence, but do not overly punish reasonable supporting sources.
-Real news reporting often uses slightly different wording — do not demand perfect match.
+STEP 3 — SCOPE MATCHING:
+Pay attention to the statement clearly, does it require a full confirmation or only partial information is fine.
+A source confirming only a narrow or partial is allowed when statement looks like this:
+e.g. claim says "suspect is a teacher and a video games maker" → source says "suspect is a teacher" = support (0.1–0.3 confidence)
+These claims do NOT NEED full claim confirmation
+
+A source that needs full confirmation looks like this:
+e.g. claim says "banned all AI" → source says "banned 8 types of AI" = contradict (0.4–0.7 confidence)
+e.g. claim says "reversed all EV subsidies" → source says "removed one subsidy" = contradict (0.4–0.7 confidence)
+These claims do NEED full claim confirmation
+
+STEP 4 — NEARLY/ALMOST CLAIMS:
+If the claim uses "nearly", "almost", or "attempted" — do not require the outcome to have
+occurred. Evidence of a threat, security response, evacuation, or shots fired in proximity
+IS supporting evidence.
+
+CONFIDENCE RULES — use the full scale:
+When in doubt, always choose LOWER confidence. Implication is not confirmation.
 
 For SUPPORT:
-- 1.0 → perfect explicit confirmation with no ambiguity
-- 0.8 → strongly supports the core claim
-- 0.6 → supports the general direction or main event (recommended default for reasonable matches)
-- 0.4 and below → weak or indirect support
-- If claim has a specific date and source has NO event date → cap at 0.5 (per STEP 2)
+- 1.0 → source explicitly confirms the claim's exact subject, action AND status, no ambiguity
+- 0.8 → source strongly confirms but has minor caveats
+- 0.6 → source confirms the general direction but status is incomplete
+- 0.4 → source implies or suggests the claim may be true, or does not mention the exact subject by name
+- 0.2 → source loosely relates, weak or indirect connection
+- 0.1 → same topic/person but different time or event
 
 For CONTRADICT:
-- 1.0 → explicitly denies the core claim
-- 0.8 → strongly implies the claim is false
-- 0.6 and below → only use if the source clearly contradicts key parts
-- If claim has a specific date and source event date MISMATCHES → minimum 0.6 (per STEP 2)
+- 1.0 → source explicitly and directly denies or disproves the claim's exact subject
+- 0.8 → source strongly implies the claim is false
+- 0.6 → source shows an earlier or incomplete stage, overstating reality
+- 0.4 → source implies the claim may be wrong but does not directly address it
+- 0.2 → source is tangentially contradicting, very indirect
+- 0.1 → same topic/person but different time or event
 
 For NEUTRAL:
-- Use ONLY when the source has zero meaningful connection to the claim
-- A source confirming the event but missing the date is NOT neutral — it is support at low confidence
-- A source about a different entity or completely unrelated event = neutral
+- 0.0 → absolutely zero topical connection — use sparingly
 
 Stance definitions:
-- "support"    → source confirms the core claim is likely true; confidence is shaped by STEP 2 date check
-- "contradict" → source indicates the core claim is likely false OR the specific date is wrong (STEP 2)
-- "neutral"    → zero topical or entity connection to the claim — not just missing details
+- "support"    → source provides evidence, direct or indirect, that the claim may be true
+- "contradict" → source provides evidence, direct or indirect, that the claim may be false
+- "neutral"    → zero topical connection to the claim, or source is about a different entity
 
 Output ONLY a JSON object, no fences, no explanation:
 {"source":"...","stance":"support|contradict|neutral","confidence":0.0,"summary":"..."}`
+
 
 /*
 trump gave a speech after suriving the shooting at white house correspondent dinner - support
@@ -99,9 +122,22 @@ trump experienced an assassination attempt on april 28th - support or deny its f
 trump experienced a total of 2 assassination attempt so far - false
 trump experienced atleast 2 assassination attempt so far - true
 trump experienced an assassination attempt in 2026 - true
+'Trump assassination attempts total latest confirmed reports'
+'Trump assassination attempts latest confirmed reports'
+'Trump assassination attempts total latest developments'
+
+yo a note: test each prompt 2-3 times before moving to next one. test for the consistency 
+then before a final commit. randomize the whole shit and then test it all again each once see if it wavers.
+
+
+'Trump assassination attempt April 25 reported news'
+'Trump assassination attempt April 25 latest news'
+
+idea:
+let AI reverdict itself around 3 times. then the result comes as the most verdict'ed but add this as a checkbox for "deeper analysis" explciitly saying it takes more time
 */
-export async function analyzeSource(claim, source, pageText = null, previousAnalyses = []) {
-  console.log("tis the new version")
+
+export async function analyzeSource(claim, source, pageText = null, previousAnalyses = [], date) {
   const context = pageText
     ? `SOURCE TITLE: ${source.title}\nSOURCE SNIPPET: ${source.snippet}\nPAGE CONTENT: ${pageText}`
     : `SOURCE TITLE: ${source.title}\nSOURCE SNIPPET: ${source.snippet}`
@@ -119,8 +155,7 @@ export async function analyzeSource(claim, source, pageText = null, previousAnal
   const now = new Date().toUTCString()
   const articleDate = source.date
   console.log(articleDate)
-  const systemPrompt = ANALYZE_PROMPT.replace('DATE',now)
-  console.log('[pageText preview]', pageText?.slice(0, 500))
+  const systemPrompt = ANALYZE_PROMPT.replace('DATE',now).replace('ARTICLE_DATE',source.date)
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -129,6 +164,7 @@ export async function analyzeSource(claim, source, pageText = null, previousAnal
     },
     body: JSON.stringify({
       model: MODEL,
+      temperature: 0.3,
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user',   content: user },

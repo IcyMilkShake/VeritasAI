@@ -1,6 +1,6 @@
 import { parseJSON } from './ollama.js'
 
-const MODEL = 'gpt-5.4-nano-2026-03-17'
+const MODEL = 'gpt-5.4-mini-2026-03-17'
 
 const SYSTEM = `Given a factual claim, return the best Google search settings.
 
@@ -54,6 +54,7 @@ export async function getSearchSettings(claim) {
     },
     body: JSON.stringify({
       model: MODEL,
+      temperature: 0,
       messages: [
         { role: 'system', content: SYSTEM },
         { role: 'user', content: `Claim: "${claim}"` },
