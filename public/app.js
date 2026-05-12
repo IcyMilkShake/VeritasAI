@@ -8,6 +8,29 @@ const statusEl    = document.getElementById("status");
 const statusText  = document.getElementById("status-text");
 const resultsEl   = document.getElementById("results");
 
+window.OPTIONS = {
+  forceUserClaim: false,
+  deeperSearch:   false,
+}
+
+const toggleBtn  = document.getElementById('options-toggle')
+const panel      = document.getElementById('options-panel')
+
+toggleBtn.addEventListener('click', () => {
+  const open = panel.classList.toggle('open')
+  toggleBtn.classList.toggle('open', open)
+})
+
+document.getElementById('opt-force-claim').addEventListener('change', e => {
+  window.OPTIONS.forceUserClaim = e.target.checked
+  console.log('[options] forceUserClaim:', window.OPTIONS.forceUserClaim)
+})
+
+document.getElementById('opt-deeper-search').addEventListener('change', e => {
+  window.OPTIONS.deeperSearch = e.target.checked
+  console.log('[options] deeperSearch:', window.OPTIONS.deeperSearch)
+})
+
 // ── Char counter ──────────────────────────────────────────────────────────────
 statementEl.addEventListener("input", () => {
   const len = statementEl.value.length;
@@ -127,13 +150,17 @@ async function onAnalyze() {
     setStatus("Extracting claims...");
 
   let claims
-  try {
-    const claimData = await apiPost('/extract-claims', { statement })
-    claims = claimData.claims
-  } catch (err) {
-    setStatus(`Error: ${err.message}`)
-    analyzeBtn.disabled = false
-    return
+  if (!window.OPTIONS.forceUserClaim) {
+    try {
+      const claimData = await apiPost('/extract-claims', { statement })
+      claims = claimData.claims
+    } catch (err) {
+      setStatus(`Error: ${err.message}`)
+      analyzeBtn.disabled = false
+      return
+    }
+  } else {
+    claims = [{ "claim": statement, "time_sensitive": false }]
   }
 
   if (!claims.length) {
@@ -155,6 +182,13 @@ async function onAnalyze() {
     let sources
     try {
       const data = await apiPost('/search', { claim })
+      if (data.message) {
+        showNoSources(i)
+        setStatus(null)
+        resultsEl.innerHTML = '<p class="no-sources">No verifiable claims found in that statement.</p>'
+        analyzeBtn.disabled = false
+        return
+      }
       sources = data.results
     } catch (err) {
         console.log(err)

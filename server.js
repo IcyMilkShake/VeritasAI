@@ -77,6 +77,7 @@ app.post('/api/search', async (req, res) => {
 
   try {
     const results = await searchClaim(claim, claim.time_sensitive)
+    if (!results) return res.status(200).json({ message: "No query" })
     res.json({ results })
   } catch (err) {
     console.error('[search]', err.message)

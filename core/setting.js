@@ -66,5 +66,6 @@ export async function getSearchSettings(claim) {
   const raw = data.choices[0].message.content
   const result = parseJSON(raw)
   console.log("Country and query:", result)
+  if (!result.query) return
   return result
 }

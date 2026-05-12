@@ -46,7 +46,7 @@
           <label class="option-row">
             <div class="option-info">
               <span class="option-name">FORCE USE USER CLAIM</span>
-              <span class="option-desc">Skip claim cleaning — analyze user's claim as-is (Highly unrecommended for normal use)</span>
+              <span class="option-desc">Skip claim cleaning — analyze user's claim as-is bypassing claim checks (Highly unrecommended for normal use)</span>
             </div>
             <div class="toggle-switch">
               <input type="checkbox" id="opt-force-claim" />
@@ -89,30 +89,5 @@
   </div>
 
   <script src="app.js"></script>
-  <script>
-    // ── Options state ─────────────────────────────────────────────────────────
-    window.OPTIONS = {
-      forceUserClaim: false,
-      deeperSearch:   false,
-    }
-
-    const toggleBtn  = document.getElementById('options-toggle')
-    const panel      = document.getElementById('options-panel')
-
-    toggleBtn.addEventListener('click', () => {
-      const open = panel.classList.toggle('open')
-      toggleBtn.classList.toggle('open', open)
-    })
-
-    document.getElementById('opt-force-claim').addEventListener('change', e => {
-      window.OPTIONS.forceUserClaim = e.target.checked
-      console.log('[options] forceUserClaim:', window.OPTIONS.forceUserClaim)
-    })
-
-    document.getElementById('opt-deeper-search').addEventListener('change', e => {
-      window.OPTIONS.deeperSearch = e.target.checked
-      console.log('[options] deeperSearch:', window.OPTIONS.deeperSearch)
-    })
-  </script>
 </body>
 </html>
