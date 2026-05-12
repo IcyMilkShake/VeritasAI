@@ -13,8 +13,9 @@ Determine the stance of the source relative to the claim.
 Rules:
 - Only use the given info
 - Do not assume extra facts
-- Be conservative
-- The source TITLE carries strong signal — treat it as a headline summary of the article's conclusion
+- Do NOT add requirements to the claim that aren't there — judge the claim as literally written, nothing more
+- Being conservative means use lower confidence when uncertain — it does NOT mean find reasons to contradict
+- The source TITLE carries strong signal...
 
 STEP 1 — READ THE CLAIM'S TENSE FIRST:
 Before doing anything else, identify what the claim is asserting:

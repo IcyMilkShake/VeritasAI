@@ -32,7 +32,7 @@ async function searchClaim(claim, timeSensitive = false) {
     gl: gl.gl,
     num: 8,
     safe: 'off',
-    no_cache: true, //yo set ts to true in production
+    no_cache: false, //yo set ts to true in production
   }
 
   console.log('[search] query:', params.q, '| gl:', gl.gl)

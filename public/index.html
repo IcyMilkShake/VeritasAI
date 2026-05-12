@@ -35,6 +35,37 @@
           <button id="analyze-btn" disabled>▶ ANALYZE</button>
           <button id="reset-btn" class="secondary hidden">RESET</button>
         </div>
+
+        <!-- Options -->
+        <button class="options-toggle" id="options-toggle">
+          <span class="options-arrow">▶</span> OPTIONS
+        </button>
+
+        <div class="options-panel" id="options-panel">
+
+          <label class="option-row">
+            <div class="option-info">
+              <span class="option-name">FORCE USE USER CLAIM</span>
+              <span class="option-desc">Skip claim cleaning — analyze user's claim as-is (Highly unrecommended for normal use)</span>
+            </div>
+            <div class="toggle-switch">
+              <input type="checkbox" id="opt-force-claim" />
+              <div class="toggle-track"><div class="toggle-thumb"></div></div>
+            </div>
+          </label>
+
+          <label class="option-row">
+            <div class="option-info">
+              <span class="option-name">DEEPER SEARCH</span>
+              <span class="option-desc">Uses diverse queries and multiple searches — slower but more thorough and gains more context</span>
+            </div>
+            <div class="toggle-switch">
+              <input type="checkbox" id="opt-deeper-search" />
+              <div class="toggle-track"><div class="toggle-thumb"></div></div>
+            </div>
+          </label>
+
+        </div>
       </section>
 
       <!-- Status line (hidden by default) -->
@@ -43,7 +74,7 @@
         <span id="status-text">Working...</span>
       </div>
 
-      <!-- Results area (empty for now) -->
+      <!-- Results area -->
       <section id="results"></section>
     </main>
 
@@ -58,5 +89,30 @@
   </div>
 
   <script src="app.js"></script>
+  <script>
+    // ── Options state ─────────────────────────────────────────────────────────
+    window.OPTIONS = {
+      forceUserClaim: false,
+      deeperSearch:   false,
+    }
+
+    const toggleBtn  = document.getElementById('options-toggle')
+    const panel      = document.getElementById('options-panel')
+
+    toggleBtn.addEventListener('click', () => {
+      const open = panel.classList.toggle('open')
+      toggleBtn.classList.toggle('open', open)
+    })
+
+    document.getElementById('opt-force-claim').addEventListener('change', e => {
+      window.OPTIONS.forceUserClaim = e.target.checked
+      console.log('[options] forceUserClaim:', window.OPTIONS.forceUserClaim)
+    })
+
+    document.getElementById('opt-deeper-search').addEventListener('change', e => {
+      window.OPTIONS.deeperSearch = e.target.checked
+      console.log('[options] deeperSearch:', window.OPTIONS.deeperSearch)
+    })
+  </script>
 </body>
 </html>
