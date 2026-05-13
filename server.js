@@ -24,6 +24,7 @@ app.use(express.static(path.join(__dirname, 'public')))
 
 async function searchClaim(claim, timeSensitive = false) {
   const gl = await getSearchSettings(claim.claim)
+  console.log("shit:",gl.news)
   const params = {
     engine: 'google',
     api_key: process.env.SERP_API_KEY,
@@ -32,6 +33,7 @@ async function searchClaim(claim, timeSensitive = false) {
     gl: gl.gl,
     num: 8,
     safe: 'off',
+    ...(gl.news && { tbm: 'nws' }),
     no_cache: false, //yo set ts to true in production
   }
 
@@ -40,10 +42,11 @@ async function searchClaim(claim, timeSensitive = false) {
  
   console.log('[search] query:', params.q, '| time_sensitive:', timeSensitive)
   const response = await getJson(params)
-  console.log('[search] results count:', response.organic_results?.length ?? 0)
+  const raw = gl.news ? response.news_results : response.organic_results
+  console.log('[search] results count:', raw?.length ?? 0)
   if (response.error) console.error('[search] SerpAPI error:', response.error)
  
-  return (response.organic_results || []).map(r => ({
+  return (raw || []).slice(0, 10).map(r => ({
     title: r.title,
     link: r.link,
     snippet: r.snippet,

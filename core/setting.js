@@ -6,6 +6,12 @@ const SYSTEM = `Given a factual claim, return the best Google search settings.
 
 1. gl: best Google country code to surface the most relevant news
 2. query: rewrite the claim as an optimized search query
+3. news: true if the claim is a verifiable factual/news claim, false if it is subjective, opinion-based, or a general knowledge fact unlikely to appear in news articles. Answer in true or false
+
+NEWS FIELD RULES:
+- true: recent events, statistics, political claims, accidents, crimes, economic data, scientific findings
+- false: opinions ("cats are cute"), superlatives without context ("iPhones are the most expensive"), common knowledge, taste/preference claims
+- When in doubt, lean false — only mark true if a news article would plausibly exist confirming or denying it
 
 QUERY RULES:
 - Convert the claim into a short, direct search query (5-10 words max)
@@ -25,9 +31,10 @@ Examples of biased vs unbiased queries:
 - "Thailand raised VAT to 10%" → "Thailand VAT rate change" ✅
 - "Apple is worth 4 trillion dollars" → "Apple market cap current" ✅
 - "US and Israel attacked Iran first" → "US Israel Iran war who started" ✅
+- "Trump experienced an assassination attempt on April 28th" → "Trump assassination attempt April" ✅
 
 Remove: specific numbers, verdicts, conclusions
-Keep: topic, entities, event type, date if relevant
+Keep: topic, entities, event type, vague date
 
 GL RULES:
 - If claim involves a specific country → use that country's code
@@ -42,7 +49,7 @@ mx = Mexico, ca = Canada, ae = United Arab Emirates, il = Israel, ir = Iran
 ru = Russia, ua = Ukraine
 
 Output ONLY a raw JSON object, no fences:
-{"gl":"xx","query":"..."}`
+{"gl":"xx","query":"...","news":true||false}`
 
 
 export async function getSearchSettings(claim) {
