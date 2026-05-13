@@ -67,6 +67,14 @@ Input: "Something crazy is going on"
 Output:
 []
 
+Input: "Current United States president"
+Output:
+[]
+
+Input: "Bitcoin price"
+Output:
+[]
+
 Input: "My friend said Elon Musk touches kids"
 Output:
 [
@@ -89,6 +97,9 @@ RULES:
 - Do NOT guess missing details
 - NEVER output vague claims
 - Only ONE claim is allowed do NOT disect the claim into many
+- If the input is a QUESTION, return []
+- Only extract claims stated as facts, not things being asked
+- A valid claim must assert something (e.g. "X is Y", "X happened", "X did Y")
 
 OUTPUT FORMAT (STRICT JSON ONLY):
 [

@@ -165,7 +165,7 @@ export async function analyzeSource(claim, source, pageText = null, previousAnal
     },
     body: JSON.stringify({
       model: MODEL,
-      temperature: 0.3,
+      temperature: 0,
       messages: [
         { role: 'system', content: systemPrompt },
         { role: 'user',   content: user },
