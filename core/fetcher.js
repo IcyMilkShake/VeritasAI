@@ -25,10 +25,11 @@ export async function fetchPageText(url) {
       .replace(/&gt;/g, '>')
       .replace(/\s+/g, ' ')
       .trim()
-      .slice(0, 3000)
+      .slice(0, 6000)
 
     return text || null
   } catch {
     return null
   }
+  //tmr ill change this into a cheerio one
 }
