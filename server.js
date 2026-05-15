@@ -39,7 +39,6 @@ async function searchClaim(claim, timeSensitive = false, setting) {
     gl: gl.gl,
     num: 8,
     safe: 'off',
-    ...(gl.news && { tbm: 'nws' }),
     no_cache: false, //yo set ts to true in production
   }
 
