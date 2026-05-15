@@ -176,12 +176,13 @@ async function onAnalyze() {
   for (let i = 0; i < claims.length; i++) {
     const claim = claims[i]
     createClaimBlock(claim, i)
+    const setting = window.OPTIONS.deeperSearch
 
     // 1. Search
     setStatus(`[${i + 1}/${claims.length}] Searching sources for: ${claim.claim}`)
     let sources
     try {
-      const data = await apiPost('/search', { claim })
+      const data = await apiPost('/search', { claim, setting })
       if (data.message) {
         showNoSources(i)
         setStatus(null)
@@ -198,28 +199,29 @@ async function onAnalyze() {
 
     if (!sources.length) { showNoSources(i); continue }
 
-    // 2. Analyze each source — one at a time, append as they come in
+    // 2. Analyze all sources in one call, and then stagger append for cool effects ig
+    setStatus(`[${i + 1}/${claims.length}] Analyzing sources...`)
     const analyses = []
-    for (let j = 0; j < sources.length; j++) {
-      setStatus(`[${i + 1}/${claims.length}] Analyzing source ${j + 1}/${sources.length}...`)
-      try {
-        const result = await apiPost('/analyze-source', {
-          claim: claim.claim,
-          source: sources[j],
-          previousAnalyses: analyses.map(a => ({
-            stance: a.stance,
-            confidence: a.confidence,
-            summary: a.summary
-          }))
-        })
-        if (!result.filtered) {
-          analyses.push(result.result)
-          console.log(result.date)
-          appendSourceCard(i, result.result, result.date)
+    try {
+      const data = await apiPost('/analyze-sources', {
+        claim: claim.claim,
+        sources,
+      })
+      data.results.forEach((item, j) => {
+        item.result.source = sources[j].title
+        if (item.result.stance !== 'neutral') {
+          analyses.push(item.result)
+          console.log(item.result)
         }
-      } catch {
-        // skip failed sources silently
-      }
+
+        setTimeout(() => {
+          if (item.result.stance !== 'neutral') {
+            appendSourceCard(i, item.result, item.date)
+          }
+        }, j * 200)
+      })
+    } catch {
+      // skip failed sources silently
     }
 
     // 3. Verdict
@@ -227,7 +229,6 @@ async function onAnalyze() {
       try {
         const verdict = await apiPost('/verdict', { analyses })
         setVerdictBadge(i, verdict)
-        console.log(analyses)
         // Summary
         const { summary } = await apiPost('/summary', { claim: claim.claim, analyses })
         setSummary(i, summary)

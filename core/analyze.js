@@ -1,14 +1,14 @@
-// ─── Step 2: Analyze a source against a claim ────────────────────────────────
-// Input:  claim (string), source { title, snippet, link }, pageText (string|null)
-// Output: { source, stance, confidence, summary } or null if irrelevant
+// ─── Step 2: Analyze sources against a claim ─────────────────────────────────
+// Input:  claim (string), sources [{ title, snippet, link, date, pageText }]
+// Output: [{ result: { source, stance, confidence, summary }, date }]
 import { callOllama, parseJSON } from './ollama.js'
 
 const MODEL = 'gpt-5.4-mini-2026-03-17'
 console.log("1")
 const ANALYZE_PROMPT = `You are a fact-checking engine. Current date/time: DATE
 
-You analyze a news source against a claim.
-Determine the stance of the source relative to the claim.
+You analyze multiple news sources against a claim.
+For each source, determine its stance relative to the claim.
 
 Rules:
 - Only use the given info
@@ -16,6 +16,8 @@ Rules:
 - Do NOT add requirements to the claim that aren't there — judge the claim as literally written, nothing more
 - Being conservative means use lower confidence when uncertain — it does NOT mean find reasons to contradict
 - The source TITLE carries strong signal...
+- Judge each source INDEPENDENTLY — do not let one source influence another
+- Write each summary in 1-3 sentences — explain what the source says AND why it supports or contradicts the claim
 
 STEP 1 — READ THE CLAIM'S TENSE FIRST:
 Before doing anything else, identify what the claim is asserting:
@@ -41,8 +43,7 @@ Examples:
   source says "senate proposed VAT hike" = support (0.8)
 
 STEP 1.5 — SOURCE DATE:
-Use SOURCE DATE to assess the claim's status if available. If null, ignore entirely. Compare this source date to today's date provided.
-Source date of the article: ARTICLE_DATE
+Each source includes its own date. Use it to assess the claim's status. If null, ignore entirely. Compare this source date to today's date provided.
 - Recent source still says "proposed/planned" → stronger contradict — a recent article would
   confirm enactment if it had actually happened
 - Old source confirming something → lower confidence, situation may have changed
@@ -107,8 +108,11 @@ Stance definitions:
 - "contradict" → source provides evidence, direct or indirect, that the claim may be false
 - "neutral"    → zero topical connection to the claim, or source is about a different entity
 
-Output ONLY a JSON object, no fences, no explanation:
-{"source":"...","stance":"support|contradict|neutral","confidence":0.0,"summary":"..."}`
+You will receive a claim and a numbered list of sources.
+Return a JSON array with one object per source, in the same order.
+
+Output ONLY a raw JSON array, no fences, no explanation:
+[{"stance":"support|contradict|neutral","confidence":0.0,"summary":"..."},...]`
 
 
 /*
@@ -138,25 +142,18 @@ idea:
 let AI reverdict itself around 3 times. then the result comes as the most verdict'ed but add this as a checkbox for "deeper analysis" explciitly saying it takes more time
 */
 
-export async function analyzeSource(claim, source, pageText = null, previousAnalyses = [], date) {
-  const context = pageText
-    ? `SOURCE TITLE: ${source.title}\nSOURCE SNIPPET: ${source.snippet}\nPAGE CONTENT: ${pageText}`
-    : `SOURCE TITLE: ${source.title}\nSOURCE SNIPPET: ${source.snippet}`
-
-  const historyText = previousAnalyses.length
-    ? `\nPREVIOUS SOURCE ANALYSES (for context only — judge this source independently):\n${
-        previousAnalyses.map((a, i) =>
-          `[${i+1}] ${a.stance.toUpperCase()} (${Math.round(a.confidence * 100)}%): ${a.summary}`
-        ).join('\n')
-      }\n`
-    : ''
-
-  const user = `CLAIM: ${claim}\n${historyText}\n${context}`
+export async function analyzeSource(claim, sources) {
+  const sourcesText = sources.map((s, i) => {
+    const parts = [`[${i + 1}] DATE: ${s.date || 'null'}`]
+    parts.push(`TITLE: ${s.title}`)
+    parts.push(`SNIPPET: ${s.snippet}`)
+    if (s.pageText) parts.push(`PAGE CONTENT: ${s.pageText}`)
+    return parts.join('\n')
+  }).join('\n\n')
 
   const now = new Date().toUTCString()
-  const articleDate = source.date
-  console.log(articleDate)
-  const systemPrompt = ANALYZE_PROMPT.replace('DATE',now).replace('ARTICLE_DATE',source.date)
+  const systemPrompt = ANALYZE_PROMPT.replace('DATE', now)
+
   const response = await fetch('https://api.openai.com/v1/chat/completions', {
     method: 'POST',
     headers: {
@@ -168,7 +165,7 @@ export async function analyzeSource(claim, source, pageText = null, previousAnal
       temperature: 0,
       messages: [
         { role: 'system', content: systemPrompt },
-        { role: 'user',   content: user },
+        { role: 'user',   content: `CLAIM: ${claim}\n\nSOURCES:\n${sourcesText}` },
       ],
     }),
   })
@@ -181,9 +178,13 @@ export async function analyzeSource(claim, source, pageText = null, previousAnal
   const data = await response.json()
   const raw = data.choices[0].message.content
 
-  const result = parseJSON(raw)
+  const results = parseJSON(raw)
 
-//if (result.stance === 'neutral') return null
+  if (!Array.isArray(results)) throw new Error('Expected array from analyze')
 
-  return { result, date: source.date || null }
+  // zip results back with original source dates
+  return results.map((r, i) => ({
+    result: r,
+    date: sources[i]?.date || null
+  }))
 }

@@ -8,6 +8,7 @@ import { analyzeSource } from './core/analyze.js'
 import { computeVerdict } from './core/scoring.js'
 import { fetchPageText } from './core/fetcher.js'
 import { getSearchSettings } from './core/setting.js'
+import { getDeeperSearchSettings } from './core/deepsetting.js'
 import { summarizeAnalysis } from './core/summary.js'
 import dotenv from 'dotenv'
 
@@ -22,9 +23,14 @@ app.use(express.static(path.join(__dirname, 'public')))
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-async function searchClaim(claim, timeSensitive = false) {
-  const gl = await getSearchSettings(claim.claim)
-  console.log("shit:",gl.news)
+async function searchClaim(claim, timeSensitive = false, setting) {
+  const gl = setting
+    ? await getDeeperSearchSettings(claim.claim)
+    : await getSearchSettings(claim.claim)
+  if (setting) {
+    console.log("deep search:", gl.query)
+    return //not done bruh
+  }
   const params = {
     engine: 'google',
     api_key: process.env.SERP_API_KEY,
@@ -75,11 +81,11 @@ app.post('/api/extract-claims', async (req, res) => {
 // Body:    { claim: { claim, time_sensitive } }
 // Returns: { results: [{ title, link, snippet }] }
 app.post('/api/search', async (req, res) => {
-  const { claim } = req.body
+  const { claim, setting } = req.body
   if (!claim) return res.status(400).json({ error: 'Missing claim' })
 
   try {
-    const results = await searchClaim(claim, claim.time_sensitive)
+    const results = await searchClaim(claim, claim.time_sensitive, setting)
     if (!results) return res.status(200).json({ message: "No query" })
     res.json({ results })
   } catch (err) {
@@ -88,22 +94,27 @@ app.post('/api/search', async (req, res) => {
   }
 })
 
-app.post('/api/analyze-source', async (req, res) => {
-  const { claim, source, previousAnalyses = [] } = req.body
-  if (!claim || !source) return res.status(400).json({ error: 'Missing claim or source' })
+// ── POST /api/analyze-sources ─────────────────────────────────────────────────
+// Body:    { claim, sources: [{ title, snippet, link, date }] }
+// Returns: { results: [{ result, date }] }
+app.post('/api/analyze-sources', async (req, res) => {
+  const { claim, sources } = req.body
+  if (!claim || !Array.isArray(sources)) return res.status(400).json({ error: 'Missing claim or sources' })
 
   try {
-    // Fetch full page content, fall back to snippet-only if it fails
-    console.log(`  [fetch] ${source.link}`)
-    const pageText = await fetchPageText(source.link)
-    const analysis = await analyzeSource(claim, source, pageText, previousAnalyses)
+    // Fetch full page content for all sources in parallel, fall back to snippet-only if it fails
+    const sourcesWithText = await Promise.all(
+      sources.map(async (source) => {
+        console.log(`  [fetch] ${source.link}`)
+        const pageText = await fetchPageText(source.link).catch(() => null)
+        return { ...source, pageText }
+      })
+    )
 
-    // analyzeSource returns null for neutral — tell frontend to skip it
-    if (!analysis) return res.json({ filtered: true })
-
-    res.json(analysis)
+    const results = await analyzeSource(claim, sourcesWithText)
+    res.json({ results })
   } catch (err) {
-    console.error('[analyze-source]', err.message)
+    console.error('[analyze-sources]', err.message)
     res.status(500).json({ error: 'Analysis failed', detail: err.message })
   }
 })
