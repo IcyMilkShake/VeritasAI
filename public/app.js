@@ -86,7 +86,7 @@ function createClaimBlock(claim, idx) {
   return block
 }
 
-function appendSourceCard(idx, analysis, date) {
+function appendSourceCard(idx, analysis, date, isPhase2 = false) {
   const body = document.getElementById(`body-${idx}`)
   const stanceMeta = {
     support:    { label: 'SUPPORTS',    cls: 'support' },
@@ -95,12 +95,14 @@ function appendSourceCard(idx, analysis, date) {
   const m = stanceMeta[analysis.stance] ?? { label: analysis.stance.toUpperCase(), cls: 'neutral' }
   const pct = Math.round((analysis.confidence ?? 0.5) * 100)
   const dateStr = date ? `<span class="source-date">${escapeHtml(date)}</span>` : ''
+  const phase2Badge = isPhase2 ? '<span class="badge-deep">⬡ DEEP</span>' : ''
 
   const card = document.createElement('div')
   card.className = `source-card ${m.cls}`
   card.innerHTML = `
     <div class="source-top">
       <span class="source-title">${escapeHtml(analysis.source)}</span>
+      ${phase2Badge}
       <span class="stance-badge ${m.cls}">${m.label}</span>
     </div>
     ${dateStr}
@@ -176,66 +178,106 @@ async function onAnalyze() {
   for (let i = 0; i < claims.length; i++) {
     const claim = claims[i]
     createClaimBlock(claim, i)
-    const setting = window.OPTIONS.deeperSearch
 
-    // 1. Search
-    setStatus(`[${i + 1}/${claims.length}] Searching sources for: ${claim.claim}`)
-    let sources
-    try {
-      const data = await apiPost('/search', { claim, setting })
-      if (data.message) {
-        showNoSources(i)
-        setStatus(null)
-        resultsEl.innerHTML = '<p class="no-sources">No verifiable claims found in that statement.</p>'
-        analyzeBtn.disabled = false
-        return
-      }
-      sources = data.results
-    } catch (err) {
+    if (window.OPTIONS.deeperSearch) {
+      //deep analysis
+      setStatus(`[${i + 1}/${claims.length}] Deep searching: ${claim.claim}`)
+      try {
+        const data = await apiPost('/deep-analyze', { claim: claim.claim })
+        if (!data.sources.phase1.length && !data.sources.phase2.length) {
+          showNoSources(i)
+          setVerdictBadge(i, { verdict: "NO SOURCE FOUND, LIKELY FALSE OR UNIDENTIFIABLE", color: '#ff3355' })
+          continue
+        }
+
+        // add the normal analysis stuff
+        data.sources.phase1.forEach((item, j) => {
+          setTimeout(() => appendSourceCard(i, item.result, item.date), j * 200)
+        })
+
+        // show draft verdict while phase 2 loads
+        setVerdictBadge(i, data.draftVerdict)
+
+        // add the deep analysis stuff
+        const offset = data.sources.phase1.length * 200
+        data.sources.phase2.forEach((item, j) => {
+          setTimeout(() => appendSourceCard(i, item.result, item.date, true), offset + j * 200)
+        })
+
+        // final verdict + summary after all cards
+        const totalDelay = (data.sources.phase1.length + data.sources.phase2.length) * 200
+        setTimeout(() => {
+          setVerdictBadge(i, data.finalVerdict)
+          setSummary(i, data.finalSummary)
+        }, totalDelay)
+
+      } catch (err) {
         console.log(err)
         showNoSources(i)
         continue
-    }
+      }
 
-    if (!sources.length) { showNoSources(i); continue }
-
-    // 2. Analyze all sources in one call, and then stagger append for cool effects ig
-    setStatus(`[${i + 1}/${claims.length}] Analyzing sources...`)
-    const analyses = []
-    try {
-      const data = await apiPost('/analyze-sources', {
-        claim: claim.claim,
-        sources,
-      })
-      data.results.forEach((item, j) => {
-        item.result.source = sources[j].title
-        if (item.result.stance !== 'neutral') {
-          analyses.push(item.result)
-          console.log(item.result)
-        }
-
-        setTimeout(() => {
-          if (item.result.stance !== 'neutral') {
-            appendSourceCard(i, item.result, item.date)
-          }
-        }, j * 200)
-      })
-    } catch {
-      // skip failed sources silently
-    }
-
-    // 3. Verdict
-    if (analyses.length) {
-      try {
-        const verdict = await apiPost('/verdict', { analyses })
-        setVerdictBadge(i, verdict)
-        // Summary
-        const { summary } = await apiPost('/summary', { claim: claim.claim, analyses })
-        setSummary(i, summary)
-      } catch { /* skip */ }
     } else {
-      showNoSources(i)
-      setVerdictBadge(i, { verdict: "NO SOURCE FOUND, LIKELY FALSE OR UNIDENTIFIABLE",  color: '#ff3355' })
+      // normal analysis
+      // 1. Search
+      setStatus(`[${i + 1}/${claims.length}] Searching sources for: ${claim.claim}`)
+      let sources
+      try {
+        const data = await apiPost('/search', { claim })
+        if (data.message) {
+          showNoSources(i)
+          setStatus(null)
+          resultsEl.innerHTML = '<p class="no-sources">No verifiable claims found in that statement.</p>'
+          analyzeBtn.disabled = false
+          return
+        }
+        sources = data.results
+      } catch (err) {
+          console.log(err)
+          showNoSources(i)
+          continue
+      }
+
+      if (!sources.length) { showNoSources(i); continue }
+
+      // 2. Analyze all sources in one call, and then stagger append for cool effects ig
+      setStatus(`[${i + 1}/${claims.length}] Analyzing sources...`)
+      const analyses = []
+      try {
+        const data = await apiPost('/analyze-sources', {
+          claim: claim.claim,
+          sources,
+        })
+        data.results.forEach((item, j) => {
+          item.result.source = sources[j].title
+          if (item.result.stance !== 'neutral') {
+            analyses.push(item.result)
+            console.log(item.result)
+          }
+
+          setTimeout(() => {
+            if (item.result.stance !== 'neutral') {
+              appendSourceCard(i, item.result, item.date)
+            }
+          }, j * 200)
+        })
+      } catch {
+        // skip failed sources silently
+      }
+
+      // 3. Verdict
+      if (analyses.length) {
+        try {
+          const verdict = await apiPost('/verdict', { analyses })
+          setVerdictBadge(i, verdict)
+          // Summary
+          const { summary } = await apiPost('/summary', { claim: claim.claim, analyses })
+          setSummary(i, summary)
+        } catch { /* skip */ }
+      } else {
+        showNoSources(i)
+        setVerdictBadge(i, { verdict: "NO SOURCE FOUND, LIKELY FALSE OR UNIDENTIFIABLE",  color: '#ff3355' })
+      }
     }
   }
 

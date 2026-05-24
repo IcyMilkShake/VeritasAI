@@ -7,8 +7,10 @@ write a SHORT MAX of 2-3 sentence plain English summary of what actually happene
 
 Rules:
 - Write as if explaining the facts directly to someone — not as a review of what sources said
-- Take condifence percentages, stances to consideration but NEVER mention confidence percentages or stances
+- Take confidence percentages, stances to consideration but NEVER mention confidence percentages or stances
+- If more than 10 sources are provided, write up to 4-5 sentences
 - Ignore any source that contradicts the majority or makes a claim no other source supports — treat it as an outlier and exclude its details from the summary
+- If 2 or more sources consistently mention the same specific date, number, or name that differs from the claim — you MUST include that correct value explicitly in the summary
 - Only include details that are consistently supported across most sources
 - Be concise and neutral in tone
 - Write in plain English, no bullet points, no markdown

@@ -10,6 +10,7 @@ import { fetchPageText } from './core/fetcher.js'
 import { getSearchSettings } from './core/setting.js'
 import { getDeeperSearchSettings } from './core/deepsetting.js'
 import { summarizeAnalysis } from './core/summary.js'
+import { deepAnalyze } from './core/deepanalyze.js'
 import dotenv from 'dotenv'
 
 dotenv.config()
@@ -47,7 +48,7 @@ async function searchClaim(claim, timeSensitive = false, setting) {
  
   console.log('[search] query:', params.q, '| time_sensitive:', timeSensitive)
   const response = await getJson(params)
-  const raw = gl.news ? response.news_results : response.organic_results
+  const raw = response.organic_results
   console.log('[search] results count:', raw?.length ?? 0)
   if (response.error) console.error('[search] SerpAPI error:', response.error)
  
@@ -139,6 +140,22 @@ app.post('/api/verdict', (req, res) => {
     return res.status(400).json({ error: 'Missing analyses array' })
 
   res.json(computeVerdict(analyses))
+})
+
+// ── POST /api/deep-analyze ────────────────────────────────────────────────────
+// Body:    { claim }
+// Returns: { sources: { phase1, phase2 }, gaps, draftVerdict, finalVerdict, finalSummary }
+app.post('/api/deep-analyze', async (req, res) => {
+  const { claim } = req.body
+  if (!claim) return res.status(400).json({ error: 'Missing claim' })
+
+  try {
+    const result = await deepAnalyze(claim)
+    res.json(result)
+  } catch (err) {
+    console.error('[deep-analyze]', err.message)
+    res.status(500).json({ error: 'Deep analysis failed', detail: err.message })
+  }
 })
 
 // ── GET /api/health ───────────────────────────────────────────────────────────

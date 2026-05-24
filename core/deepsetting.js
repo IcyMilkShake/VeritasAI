@@ -9,12 +9,6 @@ const SYSTEM = `Given a factual claim, return optimized Google search settings f
    - Query 1: direct fact verification (what is the actual current value/status)
    - Query 2: find the specific event or announcement that would confirm/deny the claim
    - Query 3: broader context — policy, background, or related coverage that adds nuance
-3. news: true if the claim is a verifiable factual/news claim, false if it is subjective, opinion-based, or a general knowledge fact unlikely to appear in news articles.
-
-NEWS FIELD RULES:
-- true: recent events, statistics, political claims, accidents, crimes, economic data, scientific findings
-- false: opinions ("cats are cute"), superlatives without context ("iPhones are the most expensive"), common knowledge, taste/preference claims
-- When in doubt, lean false — only mark true if a news article would plausibly exist confirming or denying it
 
 QUERY RULES:
 - Each query should be 5-10 words max
@@ -32,16 +26,16 @@ Let the sources tell us the number — don't lead Google toward a specific answe
 
 Examples:
 Claim: "Trump experienced an assassination attempt in 2026"
-{"gl":"us","query":["Trump assassination attempt latest","Trump shooting incident news","Trump security threat 2026"],"news":true}
+{"gl":"us","query":["Trump assassination attempt latest","Trump shooting incident news","Trump security threat 2026"]}
 
 Claim: "Thailand raised VAT to 10% in March"
-{"gl":"th","query":["Thailand VAT rate current","Thailand VAT increase announcement","Thailand VAT change March"],"news":true}
+{"gl":"th","query":["Thailand VAT rate current","Thailand VAT increase announcement","Thailand VAT change March"]}
 
 Claim: "Trump has had 2 assassination attempts"
-{"gl":"us","query":["Trump assassination attempts total","Trump security incident latest news","Trump secret service threat history"],"news":true}
+{"gl":"us","query":["Trump assassination attempts total","Trump security incident latest news","Trump secret service threat history"]}
 
 Claim: "Apple is worth 4 trillion dollars"
-{"gl":"us","query":["Apple market cap current","Apple valuation milestone news","Apple stock price history record"],"news":true}
+{"gl":"us","query":["Apple market cap current","Apple valuation milestone news","Apple stock price history record"]}
 
 GL RULES:
 - If claim involves a specific country → use that country's code
@@ -56,7 +50,7 @@ mx = Mexico, ca = Canada, ae = United Arab Emirates, il = Israel, ir = Iran
 ru = Russia, ua = Ukraine
 
 Output ONLY a raw JSON object, no fences:
-{"gl":"xx","query":["...","...","..."],"news":true||false}`
+{"gl":"xx","query":["...","...","..."]}`
 
 
 export async function getDeeperSearchSettings(claim) {
