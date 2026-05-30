@@ -33,19 +33,19 @@ npm install
 node server.js
 ```
 
-The app will run on `http://localhost:8081`.
-!!Dont forget to update the production URL in `server.js` to match your own domain if deploying!!
+- The app will run on `http://localhost:8081`.
+- !!Dont forget to update the production URL in `server.js` to match your own domain if deploying!!
 
 
 ---
 
 ## Tech Stack
 
-| **GPT-5.4 nano** | Claim extraction, summarization |
-| **GPT-5.4 mini** | Source analysis, gap analysis |
-| **SerpAPI (Google Search)** | Real-time web search, organic results |
-| **Node.js / Express** | Backend server and API routing |
-| **Vanilla JS frontend** | Browser-based UI, no framework |
+- **GPT-5.4 nano** — Claim extraction, summarization
+- **GPT-5.4 mini** — Source analysis, gap analysis
+- **SerpAPI (Google Search)** — Real-time web search, organic results
+- **Node.js / Express** — Backend server and API routing
+- **Vanilla JS Frontend** — Browser-based UI, no framework
 
 GPT-5.4 nano is used for lighter tasks (extraction, summarization) to reduce cost.
 GPT-5.4 mini handles the heavier analysis and reasoning steps.
