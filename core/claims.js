@@ -78,7 +78,7 @@ Output:
 Input: "My friend said Elon Musk touches kids"
 Output:
 [
-  { "claim": "Elon Musk touches kids", time_sensitive: true }
+  { "claim": "Elon Musk touches kids", "time_sensitive": true }
 ]
 
 
@@ -96,14 +96,19 @@ RULES:
 - Do NOT include who said it
 - Do NOT guess missing details
 - NEVER output vague claims
-- Only ONE claim is allowed do NOT disect the claim into many
 - If the input is a QUESTION, return []
 - Only extract claims stated as facts, not things being asked
 - A valid claim must assert something (e.g. "X is Y", "X happened", "X did Y")
 
+CRITICAL — ARRAY MUST CONTAIN EXACTLY ONE ITEM OR BE EMPTY:
+- If input is valid → return array with exactly ONE claim object
+- If input is invalid → return []
+- NEVER return more than one claim — combine related facts into one sentence if needed
+- Returning 2+ claims is always wrong
+
 OUTPUT FORMAT (STRICT JSON ONLY):
 [
-  { "claim": "...", time_sensitive: true|false }
+  { "claim": "...", "time_sensitive": true|false }
 ]
 
 If no valid claim:

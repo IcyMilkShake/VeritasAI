@@ -30,10 +30,21 @@
           rows="4"
           placeholder='Enter a statement to verify — e.g. "Officials are hiding a bombing attack in London"'
         ></textarea>
+        <input type="file" id="image-input" accept="image/*" class="hidden" />
 
         <div class="button-row">
           <button id="analyze-btn" disabled>▶ ANALYZE</button>
-          <button id="reset-btn" class="secondary hidden">RESET</button>
+          <button id="image-btn" class="secondary">⊕ IMAGE</button>
+        </div>
+
+        <!-- Image confirmation box -->
+        <div id="image-confirm" class="image-confirm hidden">
+          <div class="image-confirm-label">TEXT EXTRACTED FROM IMAGE — EDIT IF NEEDED</div>
+          <textarea id="image-text" rows="3"></textarea>
+          <div class="image-confirm-row">
+            <button id="image-accept">✓ USE THIS</button>
+            <button id="image-dismiss" class="secondary">✕ DISMISS</button>
+          </div>
         </div>
 
         <!-- Options -->

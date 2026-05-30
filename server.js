@@ -11,6 +11,7 @@ import { getSearchSettings } from './core/setting.js'
 import { getDeeperSearchSettings } from './core/deepsetting.js'
 import { summarizeAnalysis } from './core/summary.js'
 import { deepAnalyze } from './core/deepanalyze.js'
+import { extractFromImage } from './core/imageextract.js'
 import dotenv from 'dotenv'
 
 dotenv.config()
@@ -19,7 +20,7 @@ const app = express()
 const PORT = 8081
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
-app.use(express.json())
+app.use(express.json({ limit: '10mb' }))
 app.use(express.static(path.join(__dirname, 'public')))
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -74,6 +75,22 @@ app.post('/api/extract-claims', async (req, res) => {
   } catch (err) {
     console.error('[extract-claims]', err.message)
     res.status(500).json({ error: 'Failed to extract claims', detail: err.message })
+  }
+})
+
+// ── POST /api/extract-from-image ──────────────────────────────────────────────
+// Body:    { image: base64string, mimeType: 'image/png' }
+// Returns: { text } or { text: null }
+app.post('/api/extract-from-image', async (req, res) => {
+  const { image, mimeType } = req.body
+  if (!image || !mimeType) return res.status(400).json({ error: 'Missing image or mimeType' })
+
+  try {
+    const text = await extractFromImage(image, mimeType)
+    res.json({ text })
+  } catch (err) {
+    console.error('[extract-from-image]', err.message)
+    res.status(500).json({ error: 'Image extraction failed', detail: err.message })
   }
 })
 

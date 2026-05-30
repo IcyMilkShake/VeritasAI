@@ -3,7 +3,6 @@ const API = "/api";
 const statementEl = document.getElementById("statement");
 const charCountEl = document.getElementById("char-count");
 const analyzeBtn  = document.getElementById("analyze-btn");
-const resetBtn    = document.getElementById("reset-btn");
 const statusEl    = document.getElementById("status");
 const statusText  = document.getElementById("status-text");
 const resultsEl   = document.getElementById("results");
@@ -31,6 +30,119 @@ document.getElementById('opt-deeper-search').addEventListener('change', e => {
   console.log('[options] deeperSearch:', window.OPTIONS.deeperSearch)
 })
 
+// ── Image upload ──────────────────────────────────────────────────────────────
+const imageBtn        = document.getElementById('image-btn')
+const imageInput      = document.getElementById('image-input')
+const imageConfirmEl  = document.getElementById('image-confirm')
+const imageTextEl     = document.getElementById('image-text')
+const imageAcceptBtn  = document.getElementById('image-accept')
+const imageDismissBtn = document.getElementById('image-dismiss')
+
+imageBtn.addEventListener('click', () => imageInput.click())
+
+imageInput.addEventListener('change', async () => {
+  const file = imageInput.files[0]
+  if (!file) return
+
+  setStatus('Extracting text from image...')
+  imageBtn.disabled = true
+
+  try {
+    const base64 = await new Promise((res, rej) => {
+      const reader = new FileReader()
+      reader.onload = () => res(reader.result.split(',')[1])
+      reader.onerror = () => rej(new Error('Failed to read image'))
+      reader.readAsDataURL(file)
+    })
+
+    const { text } = await apiPost('/extract-from-image', { image: base64, mimeType: file.type })
+
+    if (!text) {
+      setStatus('No verifiable claim found in image.')
+      imageBtn.disabled = false
+      imageInput.value = ''
+      return
+    }
+
+    // show confirmation box with extracted text
+    imageTextEl.value = text
+    imageConfirmEl.classList.remove('hidden')
+    setStatus(null)
+
+  } catch (err) {
+    console.error('[image-upload]', err)
+    setStatus('Image extraction failed.')
+  }
+
+  imageBtn.disabled = false
+  imageInput.value = ''
+})
+
+imageAcceptBtn.addEventListener('click', () => {
+  const extracted = imageTextEl.value.trim()
+  if (!extracted) return
+
+  // combine with existing text or set as new
+  const existing = statementEl.value.trim()
+  statementEl.value = existing ? `${existing} ${extracted}` : extracted
+
+  // update char counter
+  const len = statementEl.value.length
+  charCountEl.textContent = `${len}/500`
+  charCountEl.classList.toggle('warn', len > 450)
+  analyzeBtn.disabled = len === 0
+
+  imageConfirmEl.classList.add('hidden')
+})
+
+imageDismissBtn.addEventListener('click', () => {
+  imageConfirmEl.classList.add('hidden')
+})
+
+// ── Paste image support ───────────────────────────────────────────────────────
+document.addEventListener('paste', async (e) => {
+  const items = e.clipboardData?.items
+  if (!items) return
+
+  for (const item of items) {
+    if (item.type.startsWith('image/')) {
+      const file = item.getAsFile()
+      if (!file) continue
+
+      setStatus('Extracting text from image...')
+      imageBtn.disabled = true
+
+      try {
+        const base64 = await new Promise((res, rej) => {
+          const reader = new FileReader()
+          reader.onload = () => res(reader.result.split(',')[1])
+          reader.onerror = () => rej(new Error('Failed to read image'))
+          reader.readAsDataURL(file)
+        })
+
+        const { text } = await apiPost('/extract-from-image', { image: base64, mimeType: file.type })
+
+        if (!text) {
+          setStatus('No verifiable claim found in image.')
+          imageBtn.disabled = false
+          return
+        }
+
+        imageTextEl.value = text
+        imageConfirmEl.classList.remove('hidden')
+        setStatus(null)
+
+      } catch (err) {
+        console.error('[paste-image]', err)
+        setStatus('Image extraction failed.')
+      }
+
+      imageBtn.disabled = false
+      break // only process first image if multiple items pasted
+    }
+  }
+})
+
 // ── Char counter ──────────────────────────────────────────────────────────────
 statementEl.addEventListener("input", () => {
   const len = statementEl.value.length;
@@ -41,16 +153,6 @@ statementEl.addEventListener("input", () => {
 
 // ── Buttons ───────────────────────────────────────────────────────────────────
 analyzeBtn.addEventListener("click", onAnalyze);
-resetBtn.addEventListener("click", onReset);
-
-function onReset() {
-  statementEl.value = "";
-  charCountEl.textContent = "0/500";
-  analyzeBtn.disabled = true;
-  resetBtn.classList.add("hidden");
-  resultsEl.innerHTML = "";
-  setStatus(null);
-}
 
 function setStatus(text) {
   if (!text) { statusEl.classList.add("hidden"); return; }
@@ -147,7 +249,6 @@ async function onAnalyze() {
     if (!statement) return;
     console.log("Analyzing starts")
     analyzeBtn.disabled = true;
-    resetBtn.classList.remove("hidden");
     resultsEl.innerHTML = "";
     setStatus("Extracting claims...");
 

@@ -368,3 +368,32 @@ footer {
   font-size: 12px; color: #333;
   font-family: monospace; margin: 0;
 }
+
+/* ── Image confirm box ── */
+.image-confirm {
+  margin-top: 12px;
+  border: 1px solid rgba(34,68,255,0.3);
+  border-radius: 4px;
+  background: var(--bg2);
+  padding: 12px 14px;
+  animation: fadeSlide 0.2s ease both;
+}
+
+.image-confirm-label {
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 2px;
+  margin-bottom: 8px;
+}
+
+.image-confirm-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.image-confirm textarea {
+  margin: 0;
+  font-size: 12px;
+  resize: vertical;
+}
